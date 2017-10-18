@@ -1,0 +1,36 @@
+{
+ "windows" : 
+	{
+		"width" : 500,
+		"height" : 500,
+		"framerateLimit" : 60,
+		"speed" : 5
+	},
+ "monsters":	
+	[
+		{
+			"health" : 4,
+			"attack" : 5,
+			"defense" : 2,
+			"speed" : 3,
+			"race" : 1,
+			"position" :
+			{
+				"x" : 100,
+				"y" : 100
+			}
+		},
+		{
+			"health" : 5,
+			"attack" : 4,
+			"defense" : 3,
+			"speed" : 2,
+			"race" : 2,
+			"position" :
+			{
+				"x" : 500,
+				"y" : 100
+			}
+		}
+	]
+}      
