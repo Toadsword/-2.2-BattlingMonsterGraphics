@@ -31,16 +31,24 @@ Monster::~Monster()
 {
 }
 
-void Monster::attack(Monster& enemy)
+int Monster::attack(Monster& enemy)
 {
 	double damage = this->attackPower - enemy.defensivePower;
 	if (damage < 1)
 		damage = 1;
 
 	enemy.health = enemy.health - damage;
+
+	return damage;
 }
 
 void Monster::draw(sf::RenderWindow& window)
 {
 	window.draw(this->sprite);
+}
+
+void Monster::move(double deltaX, double deltaY)
+{
+	this->position += sf::Vector2f(deltaX, deltaY);
+	sprite.setPosition(this->position);
 }

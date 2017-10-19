@@ -1,19 +1,19 @@
 {
  "windows" : 
 	{
-		"width" : 500,
-		"height" : 500,
+		"width" : 700,
+		"height" : 300,
 		"framerateLimit" : 60,
 		"speed" : 5
 	},
  "monsters":	
 	[
 		{
-			"health" : 4,
-			"attack" : 5,
+			"health" : 10,
+			"attack" : 6,
 			"defense" : 2,
 			"speed" : 3,
-			"race" : 1,
+			"race" : 3,
 			"position" :
 			{
 				"x" : 100,
@@ -21,10 +21,10 @@
 			}
 		},
 		{
-			"health" : 5,
+			"health" : 12,
 			"attack" : 4,
 			"defense" : 3,
-			"speed" : 2,
+			"speed" : 10,
 			"race" : 2,
 			"position" :
 			{
