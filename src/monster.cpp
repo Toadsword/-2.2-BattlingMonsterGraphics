@@ -2,7 +2,7 @@
 #include <iostream>
 
 Monster::Monster(double health, double attackPower, double defensivePower, double speed, int race, sf::Vector2f position)
-	: health(health), attackPower(attackPower), defensivePower(defensivePower), speed(speed), position(position)
+	: health(health), attackPower(attackPower), defensivePower(defensivePower), speed(speed), position(position), origin(position)
 {
 	this->race = static_cast<Race>(race);
 	std::string imagePath = "";

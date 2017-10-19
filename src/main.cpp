@@ -11,6 +11,19 @@
 
 #include "monster.h"
 
+#define UNSEEN_POSITION -500
+
+#define GAME_STATE_POS_X 30 
+#define GAME_STATE_POS_Y 200
+#define TEXT_SIZE_GAMESTATE 24
+
+#define TEXT_SIZE_DAMAGE 30
+#define TIME_DISPLAY_DAMAGE 0.5f
+#define OFFSET_DAMAGE_TEXT_Y 50
+#define OFFSET_DAMAGE_TEXT_X 10
+
+#define MONSTER_MOVE_SPEED 5
+
 using json = nlohmann::json;
 
 enum gameState
@@ -35,32 +48,59 @@ int main()
 		return EXIT_FAILURE;
 	}
 
+	json dataM1 = data["monsters"][0];
+	json dataM2 = data["monsters"][1];
+	Monster m1 = Monster(dataM1["health"], dataM1["attack"], dataM1["defense"], dataM1["speed"], dataM1["race"], sf::Vector2f(dataM1["position"]["x"], dataM1["position"]["y"]));
+	Monster m2 = Monster(dataM2["health"], dataM2["attack"], dataM2["defense"], dataM2["speed"], dataM2["race"], sf::Vector2f(dataM2["position"]["x"], dataM2["position"]["y"]));
+
 	sf::RenderWindow window(sf::VideoMode(data["windows"]["width"], data["windows"]["height"]), "SFML works!");
 	window.setFramerateLimit(data["windows"]["framerateLimit"]);
 
-	float speed = data["windows"]["speed"];
+	// Image Sprites
+	sf::Texture textureCross;
+	if (!textureCross.loadFromFile("data/img/ded.png"))
+	{
+		std::cerr << "Unable to load image (ded.png)";
+	}
+	sf::Sprite dedSprite;
+	dedSprite.setTexture(textureCross);
+	dedSprite.setPosition(UNSEEN_POSITION, UNSEEN_POSITION); // Positionnement en dehors de l'écran
 	
-	gameState currentGameState = IDLE;
-	sf::Clock clock; // démarre le chrono
+	sf::Texture textureHeart;
+	if (!textureHeart.loadFromFile("data/img/heart.png"))
+	{
+		std::cerr << "Unable to load image (heart.png)";
+	}
+	sf::Sprite heartSprite;
+	heartSprite.setTexture(textureHeart);
+	heartSprite.setPosition((m1.position.x + m2.position.x) / 2, (m1.position.y + m2.position.y) / 2.);
+
+	// Text Sprites
 	sf::Font font;
-	if (!font.loadFromFile("data/Pixeled.ttf"))
+	if (!font.loadFromFile("data/Pixel.ttf"))
 	{
 		std::cerr << "Unable to load file (Pixeled.ttf)\n";
 		system("pause");
 		return EXIT_FAILURE;
 	}
+
 	sf::Text damageText;
 	damageText.setFont(font);
-	damageText.setCharacterSize(24);
+	damageText.setCharacterSize(TEXT_SIZE_DAMAGE);
 	damageText.setColor(sf::Color::Red);
 
-	Monster m1 = Monster(data["monsters"][0]["health"], data["monsters"][0]["attack"], data["monsters"][0]["defense"], data["monsters"][0]["speed"], data["monsters"][0]["race"], sf::Vector2f(data["monsters"][0]["position"]["x"], data["monsters"][0]["position"]["y"]));
-	Monster m2 = Monster(data["monsters"][1]["health"], data["monsters"][1]["attack"], data["monsters"][1]["defense"], data["monsters"][1]["speed"], data["monsters"][1]["race"], sf::Vector2f(data["monsters"][1]["position"]["x"], data["monsters"][1]["position"]["y"]));
-	
-	int round = 0;
-	int damage;
+	sf::Text gameStateText;
+	gameStateText.setFont(font);
+	gameStateText.setCharacterSize(TEXT_SIZE_GAMESTATE);
+	gameStateText.setPosition(sf::Vector2f(GAME_STATE_POS_X, GAME_STATE_POS_Y));
+
+	int round = 0, damage;
+	double middleBattleground = (m1.position.x + m2.position.x)/2;
 	bool ism1CurrentMonster;
+	gameState currentGameState = IDLE;
+	sf::Clock clock;
 	m1.speed > m2.speed ? ism1CurrentMonster = true : ism1CurrentMonster = false;
+
 	while (window.isOpen())
 	{
 		sf::Event event;
@@ -72,57 +112,73 @@ int main()
 		window.clear();
 			switch (currentGameState)
 			{
-			case IDLE:
-				if (m1.health > 0 && m2.health > 0) {
+			case IDLE: // When no monsters are battling
+				if (m1.race == m2.race)
+				{
+					gameStateText.setString("Monsters with the same race can't battle !\n Press 'Enter' button to close the window\n");
+					window.draw(heartSprite);
+					if (sf::Keyboard::isKeyPressed(sf::Keyboard::Return))
+						window.close();
+				}
+				else if (m1.health > 0 && m2.health > 0) {
 					round++;
+					gameStateText.setString("Round " + std::to_string(round));
 					currentGameState = MONSTER_ATTACKING;
 				}
 				else
 				{
-					std::cout << "Monster ";
-					m1.health == 0 ? std::cout << "1" : std::cout << "2";
-					std::cout << " has won in " << round << "rounds !\n";
+					std::string wonMonster = "";
+					m1.health == 0 ? wonMonster = " Right " : wonMonster = " Left ";
+					m1.health == 0 ? dedSprite.setPosition(m1.position) : dedSprite.setPosition(m2.position);
+					gameStateText.setString(wonMonster + " monster has won in " + std::to_string(round) + " rounds !\n" +
+						"Press 'Enter' button to close the window\n");
+					if (sf::Keyboard::isKeyPressed(sf::Keyboard::Return)) 
+						window.close();
 				}
 
 				break;
-			case MONSTER_ATTACKING:
+			case MONSTER_ATTACKING: // When the monster moves toward to attack
 
-				ism1CurrentMonster ? m1.move(5, 0) : m2.move(-5,0);
+				ism1CurrentMonster ? m1.move(MONSTER_MOVE_SPEED, 0) : m2.move(-MONSTER_MOVE_SPEED,0);
 
-				if (m1.position.x >= 300 || m2.position.x <= 300)
+				if (m1.position.x >= middleBattleground || m2.position.x <= middleBattleground)
 				{
-					currentGameState = DEALING_DAMAGE;
-					clock.restart();
 					ism1CurrentMonster ? damage = m1.attack(m2) : damage = m2.attack(m1);
 					damageText.setString("-" + std::to_string(damage));
+					
+					clock.restart();
+					currentGameState = DEALING_DAMAGE;
 					if (ism1CurrentMonster)
-						damageText.setPosition(m2.position - sf::Vector2f(10, 50));
+						damageText.setPosition(m2.position - sf::Vector2f(OFFSET_DAMAGE_TEXT_X, OFFSET_DAMAGE_TEXT_Y));
 					else
-						damageText.setPosition(m1.position - sf::Vector2f(10, 50));
+						damageText.setPosition(m1.position - sf::Vector2f(OFFSET_DAMAGE_TEXT_X, OFFSET_DAMAGE_TEXT_Y));
 				}
 				break;
-			case MONSTER_ENDING_ATTACK:
+			case MONSTER_ENDING_ATTACK: // When the monster returns to its original position
 
-				ism1CurrentMonster ? m1.move(-5, 0) : m2.move(5, 0);
+				ism1CurrentMonster ? m1.move(-MONSTER_MOVE_SPEED, 0) : m2.move(MONSTER_MOVE_SPEED, 0);
 
-				if (m1.position.x <= 100 && m2.position.x >= 500)
+				if (m1.position.x <= m1.origin.x && m2.position.x >= m2.origin.x)
 				{
 					currentGameState = IDLE;
 					ism1CurrentMonster = !ism1CurrentMonster;
 				}
 
 				break;
-			case DEALING_DAMAGE:
+			case DEALING_DAMAGE: // When the damage is applied
 				window.draw(damageText);
-				if (clock.getElapsedTime().asSeconds() >= 0.5f)
-				{
+
+				if (clock.getElapsedTime().asSeconds() >= TIME_DISPLAY_DAMAGE)
 					currentGameState = MONSTER_ENDING_ATTACK;
-				}
+				
 				break;
 			}
 
+		// Displaying stuff
 		m1.draw(window);
 		m2.draw(window);
+		window.draw(dedSprite);
+		window.draw(gameStateText);
 		
 		window.display();
 	}

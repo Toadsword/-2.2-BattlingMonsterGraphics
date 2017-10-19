@@ -27,6 +27,7 @@ public:
 
 	
 	sf::Vector2f position;
+	sf::Vector2f origin;
 	sf::Texture texture;
 	sf::Sprite sprite;
 };
